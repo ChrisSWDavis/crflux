@@ -1174,7 +1174,6 @@ class GlobalSplineFitBeta(PrimaryFlux):
 
         return np.zeros_like(E)
     
-
 ##################################
 
 class ModifiedISOflux(PrimaryFlux):
@@ -1187,7 +1186,7 @@ class ModifiedISOflux(PrimaryFlux):
     Currently only dates between 1964/04/01 00:00 and 2021/01/31 00:00 can be used for direct date and time calculation functionality.
 
     Args:
-        input_parameters (datetime object|dict): either a Python datetime object corresponding to the date and 
+        input_parameters (datetime|dict): either a Python datetime object corresponding to the date and 
                                                  time for the spectrum to be calculated for, or a dictionary containing 
                                                  a keyword corresponding to which type of argument the calculation should use, 
                                                  followed by the input argument itself. The keyword strings can either be:
@@ -1218,13 +1217,12 @@ class ModifiedISOflux(PrimaryFlux):
             elif "from_W_parameter" in input_parameters.keys():
                 self.solarModulationWparameter = input_parameters["from_W_parameter"]
             else:
-                raise Exception("ERROR: supplied input argument and value not recognised!")
-            
+                raise Exception("ERROR: supplied input argument and value not recognised!")      
         elif isinstance(input_parameters,dt.datetime):
             datetime_to_use = input_parameters
             self.solarModulationWparameter = self.calculate_solar_modulation_from_datetime(datetime_to_use)
         else:
-            Exception("ERROR: supplied input argument was not a dictionary or a datetime!")
+            raise Exception("ERROR: supplied input argument was not a dictionary or a datetime!")
 
         get_integer_atomic_mass = lambda atomic_number:round(periodictable.elements[atomic_number].mass)
 
