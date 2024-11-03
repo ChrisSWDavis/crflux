@@ -1193,12 +1193,15 @@ class ModifiedISOflux(PrimaryFlux):
 
                                                     "from_datetime" followed by a Python datetime object.
 
+                                                    
                                                     "from_OULU_count_rate" followed by a float object giving the count rate (per second) of the OULU neutron monitor.
 
+                                                    
                                                     "from_W_parameter" followed by the value of W, a parameter that Matthiä et al. describe in their paper, which roughly corresponds to sunspot number.
     
     References:
         Matthiä et al., "A ready-to-use galactic cosmic ray model", Advances in Space Research 51.3 (2013): 329-338, https://doi.org/10.1016/j.asr.2012.09.022
+
         Space Environment and Protection Group, University of Surrey. (2024). CosRayModifiedISO (Version 1.2.8) [Computer software]. https://github.com/ssc-maire/CosRayModifiedISO . https://doi.org/10.5281/zenodo.10992395
     """
 
