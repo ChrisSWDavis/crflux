@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 import crflux.models as mods
 import numpy as np
+import datetime as dt
 
 def test_plotting():
     
@@ -17,7 +18,9 @@ def test_plotting():
         (mods.ZatsepinSokolskaya, 'pamela', 'ZSP', "c", "--"),
         (mods.GaisserHonda, None, 'GH', "0.5", "-"),
         #    (GlobalSplineFit, None, 'GSF', "k", "-"),
-        (mods.GlobalSplineFitBeta, None, 'GSF spl', "k", ":")
+        (mods.GlobalSplineFitBeta, None, 'GSF spl', "k", ":"),
+        (mods.ModifiedISOflux, dt.datetime(year=2014,month=4,day=15), 'CosRayModifiedISO,\nsolar maximum', "red", "-."),
+        (mods.ModifiedISOflux, {"from_datetime":dt.datetime(year=2019,month=12,day=15)}, 'CosRayModifiedISO,\nsolar minimum', "green", "-."),
     ]
 
     nfrac = {}

@@ -126,6 +126,9 @@ from abc import ABCMeta, abstractmethod
 from six import with_metaclass
 import numpy as np
 
+from CosRayModifiedISO import CosRayModifiedISO
+import periodictable
+import datetime as dt
 
 def _get_closest(value, in_list):
     """Compares the parameters ``value`` with values of the
@@ -1170,3 +1173,89 @@ class GlobalSplineFitBeta(PrimaryFlux):
         in the spline interface version"""
 
         return np.zeros_like(E)
+    
+
+##################################
+
+class ModifiedISOflux(PrimaryFlux):
+    """Flux from CosRayModifiedISO, a semi-empirical cosmic ray model created by Matthiä et al. (2013), and implemented by Davis et al. (2024), https://github.com/ssc-maire/CosRayModifiedISO.
+    
+    This cosmic ray model utilises fits to CRIS data aboard the ACE mission, combined with the solar system force field model to 
+    calculate fluxes for elements 1-28. The model only requires a single input parameter, W, which roughly corresponds to sunspot number,
+    and can be approximated using count rates from the OULU neutron monitor, and therefore using date and time.
+
+    Currently only dates between 1964/04/01 00:00 and 2021/01/31 00:00 can be used for direct date and time calculation functionality.
+
+    Args:
+        input_parameters (datetime object|dict): either a Python datetime object corresponding to the date and 
+                                                 time for the spectrum to be calculated for, or a dictionary containing 
+                                                 a keyword corresponding to which type of argument the calculation should use, 
+                                                 followed by the input argument itself. The keyword strings can either be:
+
+                                                    "from_datetime" followed by a Python datetime object.
+
+                                                    "from_OULU_count_rate" followed by a float object giving the count rate (per second) of the OULU neutron monitor.
+
+                                                    "from_W_parameter" followed by the value of W, a parameter that Matthiä et al. describe in their paper, which roughly corresponds to sunspot number.
+    
+    References:
+        Matthiä et al., "A ready-to-use galactic cosmic ray model", Advances in Space Research 51.3 (2013): 329-338, https://doi.org/10.1016/j.asr.2012.09.022
+        Space Environment and Protection Group, University of Surrey. (2024). CosRayModifiedISO (Version 1.2.8) [Computer software]. https://github.com/ssc-maire/CosRayModifiedISO . https://doi.org/10.5281/zenodo.10992395
+    """
+
+    def __init__(self, input_parameters:dict|dt.datetime):
+        
+        if isinstance(input_parameters,dict):
+            if len(input_parameters.keys()) > 1:
+                raise Exception("ERROR: Too many keyword arguments supplied to ModifiedISOflux, only one keyword argument allowed.")
+
+            if "from_datetime" in input_parameters.keys():
+                datetime_to_use = input_parameters["from_datetime"]
+                self.solarModulationWparameter = self.calculate_solar_modulation_from_datetime(datetime_to_use)
+            elif "from_OULU_count_rate" in input_parameters.keys():
+                OULUcountRatePerSecond = input_parameters["from_OULU_count_rate"]
+                self.solarModulationWparameter = CosRayModifiedISO.getWparameterFromOULUcountRate(OULUcountRatePerSecond)
+            elif "from_W_parameter" in input_parameters.keys():
+                self.solarModulationWparameter = input_parameters["from_W_parameter"]
+            else:
+                raise Exception("ERROR: supplied input argument and value not recognised!")
+            
+        elif isinstance(input_parameters,dt.datetime):
+            datetime_to_use = input_parameters
+            self.solarModulationWparameter = self.calculate_solar_modulation_from_datetime(datetime_to_use)
+        else:
+            Exception("ERROR: supplied input argument was not a dictionary or a datetime!")
+
+        get_integer_atomic_mass = lambda atomic_number:round(periodictable.elements[atomic_number].mass)
+
+        self.nucleus_ids = [14] + [atomic_number + (100 * get_integer_atomic_mass(atomic_number)) for atomic_number in range(2,29)]
+
+    def calculate_solar_modulation_from_datetime(self, datetime_to_use:dt.datetime):
+        """Calculates the solar modulation W parameter for a given datetime.        
+        """
+        
+        if (datetime_to_use > dt.datetime(year=1964,month=4,day=1)) and (datetime_to_use < dt.datetime(year=2021,month=1,day=31)):
+            OULUcountRatePerSecond = CosRayModifiedISO.getOULUcountRateForTimestamp(datetime_to_use)
+        else:
+            raise Exception("ERROR: Supplied datetime is out of the valid range of datetimes, currently only dates between " + \
+                                    "1964/04/01 00:00 and 2021/01/31 00:00 can be used for direct date and time calculation functionality.")
+        solarModulationWparameter = CosRayModifiedISO.getWparameterFromOULUcountRate(OULUcountRatePerSecond)
+        return solarModulationWparameter
+
+    def nucleus_flux(self, corsika_id, E):
+        """Returns the flux of nuclei corresponding to
+        the ``corsika_id`` at energy ``E``.
+
+        Args:
+          corsika_id (int): see :mod:`crflux` for description.
+          E (float): laboratory energy of nucleus in GeV
+        Returns:
+          (float): flux of single nucleus type :math:`\\Phi_{nucleus}`
+          in :math:`(\\text{m}^2 \\text{s sr GeV})^{-1}`
+        """
+       
+        charge_Z, mass_A = self.Z_A(corsika_id)
+
+        unit_conv_factor = 1e7
+
+        return CosRayModifiedISO.getEnergyFluxesFromEnergies(self.solarModulationWparameter, charge_Z, E * 1000.0) * mass_A * unit_conv_factor

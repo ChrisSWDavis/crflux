@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
 
-__version__ = "1.0.8"
+__version__ = "1.0.9"
 
 
 def setup_package():
@@ -31,7 +31,7 @@ def setup_package():
         package_dir={"crflux": "crflux"},
         packages=["crflux"],
         package_data={"crflux": ["GSF_spline_20171007.pkl.bz2"]},
-        install_requires=["setuptools", "numpy", "scipy"],
+        install_requires=["setuptools", "numpy", "scipy","periodictable >= 1.7.1","CosRayModifiedISO >= 1.2.8"],
         extras_require={"tests": ["pytest", "matplotlib"]},
         py_modules=["six"],
         classifiers=[
